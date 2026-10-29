@@ -1,0 +1,5 @@
+GET /index 200
+POST /submit 201
+GET /docs 200
+POST /login 200
+GET /status 200

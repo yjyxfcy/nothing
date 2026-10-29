@@ -1,0 +1,37 @@
+{
+  "name": "@local/dsh-rosetta-compat",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Rosetta compatibility layer for DeepSeek Harness: project target artifacts into a familiar view, edit there, preview, and deliver back atomically.",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "python/rosetta_harness_bridge.py",
+    "README.md",
+    "locale/*.json"
+  ],
+  "meta": {
+    "title": "Rosetta compatibility layer",
+    "description": "Project Typst/SystemVerilog/PRQL/Nushell artifacts into LaTeX/Verilog/SQL/Bash views, edit there, preview the delivery, and write back atomically."
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  }
+}

@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rosetta-compat-layer"
+version = "0.1.0"
+description = "A dual-view compatibility layer for coding agents"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+requires-python = ">=3.10"
+dependencies = [
+  "bashlex>=0.18",
+  "mcp>=1.26,<2",
+  "prqlc==0.13.14",
+  "sqlglot>=25",
+]
+
+[project.scripts]
+rosetta-mcp = "rosetta_studio.mcp_server:main"
+rosetta-studio = "rosetta_studio.app:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/compat_layer", "src/rosetta_studio"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/compat_layer/**", "src/rosetta_studio/**", "README.md", "THIRD_PARTY_NOTICES.md", "LICENSE", "pyproject.toml"]

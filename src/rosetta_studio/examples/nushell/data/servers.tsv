@@ -1,0 +1,5 @@
+name	region	cpu
+api-01	east	93
+db-02	west	62
+web-03	east	87
+cache-04	west	79

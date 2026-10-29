@@ -1,0 +1,27 @@
+.verify/
+.gui-help-dist/
+.mcp-demo-dist/
+.mcp-demo-verify/
+demo_runs/
+dist/
+.rosetta/
+**/__pycache__/
+*.pyc
+*.egg-info/
+build/
+
+# Transient pip build/install directories can contain machine-local file URIs.
+pip-build-env-*/
+pip-build-tracker-*/
+pip-ephem-wheel-cache-*/
+pip-install-*/
+pip-unpack-*/
+
+# Local engineering evidence contains machine-specific paths and run logs.
+engineering_validation/
+MCP_DEMO_FIXES.md
+
+# Scratch directories created by fault-injection and regression tests.
+rosetta-regress-*/
+p2-*/
+.release-stage-preview/

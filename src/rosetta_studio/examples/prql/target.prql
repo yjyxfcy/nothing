@@ -1,0 +1,4 @@
+from employees
+select {name, department, salary}
+sort {-salary}
+take 5

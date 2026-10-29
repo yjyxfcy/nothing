@@ -1,0 +1,3 @@
+- insert:
+    - id: rosetta-compat
+      name: '@local/dsh-rosetta-compat'
