@@ -28,11 +28,21 @@ open elsewhere, specify the project explicitly:
 & $Setup -Workspace 'C:\work\my-project'
 ```
 
+## Install the plugin in Harness
+
 The script installs Rosetta into its own local Python environment and prepares
 a stable plugin bundle for that workspace. It prints the bundle path. Install
 that directory as a local bundle with the Harness plugin manager
-(`install_bundle`) **once**, then restart Harness. The script leaves your
-existing Harness profile alone.
+(`install_bundle`) **once**, enable it if needed, then restart Harness. In the
+Harness plugin manager, supply the path printed by setup as the target:
+
+```text
+plugin_manager { action: "install_bundle", target: "<printed plugin-current path>" }
+```
+
+After restarting, open a chat in the configured project and ask the agent to
+run `ros_doctor`; check that the tool pair you need is available. The script
+leaves your existing Harness profile alone.
 
 If `<project-directory>/.rosetta/.gitignore` does not exist, setup creates it to
 keep local session, activity, and recovery data out of Git. An existing ignore
@@ -54,6 +64,8 @@ the generated settings without contacting PyPI, run setup with
 `-SkipPackageInstall`. It verifies that the installed Python package matches
 the repository source byte for byte before updating the plugin bundle. If the
 Python source changed, use the normal setup command instead.
+
+## Install converters
 
 The plugin needs the external converter for the pair you plan to use:
 

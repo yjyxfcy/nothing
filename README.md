@@ -1,29 +1,56 @@
 # Rosetta compatibility layer
 
-For everyday editing in DeepSeek Harness, start with the
-[quick start](QUICKSTART.md).
+Rosetta lets a DeepSeek Harness agent edit a target file through a familiar
+representation. For example, it can work with a Typst document through a
+LaTeX view; you review the translated Typst preview before writing the file.
+Rosetta Studio can display the editing steps and views.
 
-This is the standalone runtime distribution. It contains the dual-view
-adapters, a local MCP server for agent access, and an optional desktop GUI.
-It does not include paper tasks, answers, scorers, or agent runners. The four
-bundled examples are demonstrations, not benchmark inputs.
+| Your file | Agent view | External tool |
+|---|---|---|
+| Typst (`.typ`) | LaTeX | Tylax `t2l`, Pandoc; Typst for validation |
+| SystemVerilog (`.sv`) | Verilog | `sv2v` |
+| PRQL (`.prql`) | SQL | Installed with the Python package |
+| Nushell (`.nu`) | Bash | Nushell for validation; experimental subset |
 
-## Install
+## Install for DeepSeek Harness (Windows)
 
-Use Python 3.10 or newer in a virtual environment. The GUI additionally
-requires Tkinter in the Python installation:
+1. Install Python 3.10+, DeepSeek Harness, [uv](https://docs.astral.sh/uv/getting-started/installation/), and the external tools for your file type. [Downloads and configuration](QUICKSTART.md#install-converters) explain which are required.
+2. Clone this repository and open PowerShell in the project you want the agent to edit. Replace the path below with your clone:
 
-```powershell
-uv pip install . # recommended; install uv first
-# Alternatively: python -m pip install .
-```
+   ```powershell
+   $RosettaRepo = 'C:\path\to\Rosetta-for-AI-Agents'
+   $Setup = Join-Path $RosettaRepo 'integrations\deepseek_harness\setup.ps1'
+   & $Setup
+   ```
 
-For SystemVerilog projection, install `sv2v` on `PATH`, or set
-`ROSETTA_SV2V` to its executable path. For the preferred Typst backends,
-install `t2l` and `pandoc` on `PATH`, or set `ROSETTA_TYLAX` and
-`ROSETTA_PANDOC`. Install `typst` on `PATH` for compile validation.
-These external executables are not bundled in the wheel. The converter
-reports failures when a required backend is unavailable.
+3. In DeepSeek Harness, use the plugin manager to install the `plugin-current` path printed by setup, enable the plugin if needed, and restart Harness. See [the complete walkthrough](QUICKSTART.md#install-the-plugin-in-harness) for the manager command and verification.
+4. Open a chat in the configured project and ask the agent to run `ros_doctor`. Check that your format's tools are available.
+
+Setup uses `uv` when it is available and pip otherwise. It creates a dedicated
+Python environment; it does not install external converters or modify the
+Harness profile. The first installation needs network access. To install for a
+project other than the current PowerShell directory, use `& $Setup -Workspace
+'C:\path\to\your-project'`.
+
+## Make your first edit
+
+Create or choose a file inside the configured project. In a Harness chat, ask:
+
+> Use Rosetta to change the heading in `docs/report.typ`, preserve its Typst-only content, and show me a preview. Do not deliver until I confirm.
+
+Open the Rosetta status panel below the chat to inspect the familiar view and
+target preview. **Preview does not write the file.** Click **Deliver**, review
+the diff, and click **Confirm delivery** to save. Click **Release** when you
+are finished. See [the quick start](QUICKSTART.md#edit-a-file) for details and
+how to open the Studio activity window.
+
+## Other installation options
+
+For the standalone Python package, create and activate a virtual environment,
+then run `uv pip install .` from the repository root (or `python -m pip install .`).
+The GUI also requires Tkinter. For its MCP and Python API entry points, see below.
+This runtime distribution includes example files; it does not contain the paper's
+benchmark tasks or evaluation results.
 
 ## Connect an agent
 

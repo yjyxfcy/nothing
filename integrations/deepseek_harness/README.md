@@ -48,7 +48,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $setupScript -PipArgs '--ind
 powershell -NoProfile -ExecutionPolicy Bypass -File $setupScript -SkipPackageInstall
 ```
 
-The public-PyPI option above was verified from a fresh Python 3.13 environment. If your network requires an organization-managed package mirror, replace the index URL with that mirror instead.
+The recommended uv setup was verified in a fresh Python 3.11 environment. If your network requires an organization-managed package mirror, configure uv or pass the appropriate pip index with `-PipArgs`.
 
 The script does not edit the Harness profile. On the first install, use the Harness plugin manager to install the printed bundle path:
 
