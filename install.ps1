@@ -182,9 +182,10 @@ if (-not $SkipSetup) {
     if ($TypstPath) { $setupParams.TypstPath = $TypstPath }
     if ($NushellPath) { $setupParams.NushellPath = $NushellPath }
     if ($SkipPackageInstall) { $setupParams.SkipPackageInstall = $true }
-    & $setup @setupParams
-    if (-not $? -or ($LASTEXITCODE -ne 0 -and $null -ne $LASTEXITCODE)) {
-        throw "Rosetta setup failed (exit code $LASTEXITCODE)."
+    try {
+        & $setup @setupParams
+    } catch {
+        throw "Rosetta setup failed: $($_.Exception.Message)"
     }
 }
 
