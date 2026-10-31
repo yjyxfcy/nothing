@@ -56,7 +56,7 @@ Useful options:
 .\install.ps1 -SkipPackageInstall
 
 # Use a non-default DSH profile, or print the path for manual plugin-manager registration.
-.\install.ps1 -ProfileDir 'C:\Users\me\.dsh\profiles\desktop'
+.\install.ps1 -ProfileDir "$env:USERPROFILE\.dsh\profiles\desktop"
 .\install.ps1 -NoProfileInstall
 ```
 

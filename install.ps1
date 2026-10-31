@@ -85,7 +85,7 @@ function Resolve-ProfileDirectory {
         Test-Path -LiteralPath (Join-Path $_.FullName 'package.json') -PathType Leaf
     })
     if ($found.Count -eq 1) { return $found[0].FullName }
-    throw "Could not identify the DSH profile. Pass -ProfileDir <path-to-profile> (for example C:\Users\<you>\.dsh\profiles\desktop)."
+    throw "Could not identify the DSH profile. Pass -ProfileDir <path-to-profile> (for example $env:USERPROFILE\.dsh\profiles\desktop)."
 }
 
 function Assert-HarnessCanBeUpdated([switch]$AllowRunning) {
