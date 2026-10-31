@@ -7,42 +7,63 @@ and lets you preview, deliver or release a session.
 
 ## Set up on Windows
 
-Install Python 3.10+ and DeepSeek Harness, and clone this repository. In
-PowerShell, set `$RosettaRepo` to the clone directory. Run setup while the
-current directory is the project you want Rosetta to manage:
+Install Python 3.10+, DeepSeek Harness, and Node.js with `pnpm` on `PATH`.
+[uv](https://docs.astral.sh/uv/getting-started/installation/) is recommended
+for the Python install. The first install needs network access to GitHub and
+PyPI.
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first for the recommended installation path. The first setup needs access to PyPI. Setup automatically uses uv when available; otherwise it uses pip. Run from the directory containing the files you want to edit:
-
-```powershell
-$RosettaRepo = 'C:\path\to\Rosetta-for-AI-Agents' # replace with your clone
-$Setup = Join-Path $RosettaRepo 'integrations\deepseek_harness\setup.ps1'
-& $Setup
-```
-
-Setup creates its own Python environment and plugin bundle. If pip stalls, install uv, reopen PowerShell so `uv` is on PATH, and rerun the same command. To use a custom pip index explicitly, pass `-PipArgs '--index-url https://pypi.org/simple --timeout 15 --retries 0'`; this selects pip even when uv is installed.
-
-By default, setup manages the current PowerShell directory. If PowerShell is
-open elsewhere, specify the project explicitly:
+Close DeepSeek Harness, open PowerShell in the project directory you want
+Rosetta to manage, and run:
 
 ```powershell
-& $Setup -Workspace 'C:\work\my-project'
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/yjyxfcy/nothing/main/install.ps1 | iex"
 ```
 
-## Install the plugin in Harness
+This downloads the repository into a temporary directory, creates a dedicated
+Python environment under `%LOCALAPPDATA%\Rosetta\Harness`, writes the stable
+`plugin-current` bundle, registers that bundle in the active DeepSeek Harness
+desktop profile, and updates the profile lockfile. It backs up the profile's
+`package.json` and `pnpm-lock.yaml` under
+`.plugin-manager\rosetta-install-backup-*` before changing them. It does not
+restart Harness.
 
-The script installs Rosetta into its own local Python environment and prepares
-a stable plugin bundle for that workspace. It prints the bundle path. Install
-that directory as a local bundle with the Harness plugin manager
-(`install_bundle`) **once**, enable it if needed, then restart Harness. In the
-Harness plugin manager, supply the path printed by setup as the target:
+Restart Harness, open a chat in the configured project, and ask the agent to
+run `ros_doctor`; check that the tool pair you need is available.
 
-```text
-plugin_manager { action: "install_bundle", target: "<printed plugin-current path>" }
+If you prefer to inspect the installer first, clone the repository and run it
+directly. If the clone is already the project directory, omit `-Workspace`:
+
+```powershell
+git clone https://github.com/yjyxfcy/nothing
+powershell -NoProfile -ExecutionPolicy Bypass -File .\nothing\install.ps1 -Workspace 'C:\work\my-project'
 ```
 
-After restarting, open a chat in the configured project and ask the agent to
-run `ros_doctor`; check that the tool pair you need is available. The script
-leaves your existing Harness profile alone.
+Useful options:
+
+```powershell
+# Choose one or more project roots.
+.\install.ps1 -Workspace @('C:\work\project-a', 'D:\work\project-b')
+
+# Record converter binaries that are not on PATH.
+.\install.ps1 -Workspace 'C:\work\my-project' -Sv2vPath 'D:\tools\sv2v.exe' -TypstPath 'D:\tools\typst.exe'
+
+# Use a specific pip index or an offline/warmed cache.
+.\install.ps1 -PipArgs '--index-url https://pypi.org/simple --timeout 15 --retries 0'
+
+# Refresh the bundle without reinstalling Python, after changing workspace or converter settings.
+.\install.ps1 -SkipPackageInstall
+
+# Print the bundle path and use the in-app plugin manager instead of editing the profile.
+.\install.ps1 -NoProfileInstall
+```
+
+If pip stalls, install uv, reopen PowerShell so `uv` is on `PATH`, and rerun
+the installer. Setup uses uv when it is available and pip otherwise.
+
+By default, setup manages the current PowerShell directory. Choose the
+narrowest project directory you intend the agent to edit. The configured
+workspace is Rosetta's file-access boundary, so setting it to a parent
+directory also makes its child projects reachable.
 
 If `<project-directory>/.rosetta/.gitignore` does not exist, setup creates it to
 keep local session, activity, and recovery data out of Git. An existing ignore
@@ -51,19 +72,43 @@ written through; check the ignore rules for its target before publishing.
 Ignore rules do not untrack files already committed; check
 `git ls-files -- .rosetta` before publishing an existing workspace.
 
-Choose the narrowest project directory you intend the agent to edit. The
-configured workspace is Rosetta's file-access boundary, so setting it to a
-parent directory also makes its child projects reachable.
+On later updates, run the installer again and restart Harness. The bundle path
+is stable (`plugin-current`), so it overwrites the bundle in place instead of
+creating a second one.
 
-On later updates, run setup again and just restart Harness. The bundle path is
-stable (`plugin-current`), so setup overwrites it in place instead of creating a
-second bundle; do not call `install_bundle` a second time.
+## Register the plugin manually
 
-If you only changed the workspace or installed a converter and want to refresh
-the generated settings without contacting PyPI, run setup with
-`-SkipPackageInstall`. It verifies that the installed Python package matches
-the repository source byte for byte before updating the plugin bundle. If the
-Python source changed, use the normal setup command instead.
+The installer already edits the active profile. Use this fallback only when
+you passed `-NoProfileInstall`, when the profile lives outside the default
+`%USERPROFILE%\.dsh\profiles\desktop`, or when you want the plugin manager to
+own the registration.
+
+`integrations\deepseek_harness\setup.ps1` creates the Python environment and
+bundle and prints the bundle path, but deliberately leaves the Harness profile
+alone:
+
+```powershell
+$Setup = 'C:\path\to\nothing\integrations\deepseek_harness\setup.ps1'
+& $Setup -Workspace 'C:\work\my-project'
+```
+
+Then install the printed directory as a local bundle, enable it if needed, and
+restart Harness:
+
+```text
+plugin_manager { action: "install_bundle", target: "<printed plugin-current path>" }
+```
+
+The repository root now declares the same bundle, so a plugin-manager install
+from `github:yjyxfcy/nothing` also resolves. That installs the JavaScript half
+only; run setup first so the Python environment and `plugin-current` bridge
+exist.
+
+If only the workspace or a converter changed and you do not want to contact
+PyPI, run setup with `-SkipPackageInstall`. It verifies that the installed
+Python package matches the repository source byte for byte before refreshing
+the bundle. If the Python source changed, use the normal setup command
+instead.
 
 ## Install converters
 

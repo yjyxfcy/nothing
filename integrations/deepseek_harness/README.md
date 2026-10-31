@@ -25,51 +25,75 @@ Install external tools from their maintainers: [Typst](https://github.com/typst/
 
 ## Install
 
-Open PowerShell in the project directory you want Rosetta to manage, then run the setup script by its path. With no `-Workspace` argument, the script uses PowerShell's current directory; running it from the Rosetta integration subdirectory would restrict access to that subdirectory. You can instead pass one or more workspace directories explicitly and run setup from anywhere. The script creates a dedicated Python environment under `%LOCALAPPDATA%\Rosetta\Harness`, installs the package from the Rosetta repository root, copies the plugin bundle to a stable `plugin-current` directory, and writes the selected workspace roots into the plugin configuration. Re-running setup with a new list replaces the configured allow-list, so include every project you want the plugin to manage. Roots are canonicalized and duplicate paths are removed. Studio's default workspace remains the first root; use **Select workspace** in Studio to switch its activity view. Setup also saves detected converter paths locally and saves the first workspace for Studio. Validation tools (`typst`, `nu`) are saved alongside translation tools (`t2l`, `pandoc`, `sv2v`), because the Harness process may not inherit a shell's updated `PATH`. Setup prints a per-pair readiness summary, distinguishing blocked pairs from the built-in reduced-coverage fallback and optional validators. The checked-in `cordis.patch.yml` intentionally contains no machine-specific paths; the Host can derive the workspace from the current Harness chat, while setup generates explicit roots for this machine.
+### Recommended: root installer
 
-For every selected root, setup creates `<workspace>/.rosetta/.gitignore` when missing, to exclude local sessions, activity, and recovery data from Git. An existing ignore file is left unchanged; verify that it excludes `.rosetta` state before publishing the workspace. Setup will not write through a reparse-point `.rosetta` directory or `.gitignore` file; if it warns, protect the link target through the repository's ignore rules. Ignore rules do not untrack files already committed, so check `git ls-files -- .rosetta` before publishing an existing workspace.
+Install Python 3.10+, DeepSeek Harness, and Node.js with `pnpm` on `PATH`. External converters are needed only for the file types you use. Close Harness, open PowerShell in the project directory you want Rosetta to manage, and run the repository-root installer:
 
 ```powershell
-# Run this while the current directory is the project to manage; replace the
-# placeholder with the cloned Rosetta repository path.
-$setupScript = '<path-to-rosetta-repo>\integrations\deepseek_harness\setup.ps1'
-powershell -NoProfile -ExecutionPolicy Bypass -File $setupScript
-# Or run from any directory and name the workspace explicitly:
-powershell -NoProfile -ExecutionPolicy Bypass -File $setupScript -Workspace 'C:\work\my-project'
-# Multiple roots are supported; rerunning replaces the previous allow-list:
-& $setupScript -Workspace @('C:\work\project-a', 'D:\work\project-b')
-# Converter binaries outside PATH can be passed directly (all are optional):
-& $setupScript -Workspace 'C:\work\my-project' -Sv2vPath 'D:\tools\sv2v.exe' -TypstPath 'D:\tools\typst.exe'
-# Offline or warmed cache (requires Hatchling and runtime dependencies in the venv or wheel cache):
-powershell -NoProfile -ExecutionPolicy Bypass -File $setupScript -PipArgs '--no-index --no-deps --no-build-isolation'
-# If your configured package index is unavailable, use public PyPI explicitly:
-powershell -NoProfile -ExecutionPolicy Bypass -File $setupScript -PipArgs '--index-url https://pypi.org/simple --timeout 15 --retries 0'
-# Refresh only workspace/converter settings and the Host bundle; verify Python source is already installed:
-powershell -NoProfile -ExecutionPolicy Bypass -File $setupScript -SkipPackageInstall
+# From a clone:
+powershell -NoProfile -ExecutionPolicy Bypass -File '<repo>\install.ps1'
+
+# Or without cloning:
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/yjyxfcy/nothing/main/install.ps1 | iex"
 ```
 
-The recommended uv setup was verified in a fresh Python 3.11 environment. If your network requires an organization-managed package mirror, configure uv or pass the appropriate pip index with `-PipArgs`.
+The installer runs `setup.ps1`, then registers the stable `plugin-current` bundle in the active Harness desktop profile. It creates a directory junction at `node_modules\@local\dsh-rosetta-compat` (no Developer Mode or symlink privilege required), adds the bundle to `dsh.profile.bundles`, writes the `link:` dependency, and runs `pnpm install --lockfile-only` to update the profile lockfile without touching the rest of `node_modules`. Before editing, it copies `package.json` and `pnpm-lock.yaml` to `.plugin-manager\rosetta-install-backup-<timestamp>`. On failure it restores both files.
 
-The script does not edit the Harness profile. On the first install, use the Harness plugin manager to install the printed bundle path:
+Useful options:
+
+```powershell
+# Multiple roots; rerunning replaces the previous allow-list.
+.\install.ps1 -Workspace @('C:\work\project-a', 'D:\work\project-b')
+
+# Converter binaries outside PATH (all optional).
+.\install.ps1 -Workspace 'C:\work\my-project' -Sv2vPath 'D:\tools\sv2v.exe' -TypstPath 'D:\tools\typst.exe'
+
+# Offline/warmed pip cache, or an explicit index.
+.\install.ps1 -PipArgs '--no-index --no-deps --no-build-isolation'
+.\install.ps1 -PipArgs '--index-url https://pypi.org/simple --timeout 15 --retries 0'
+
+# Refresh only the workspace/converter settings and bundle.
+.\install.ps1 -SkipPackageInstall
+
+# Use a non-default DSH profile, or print the path for manual plugin-manager registration.
+.\install.ps1 -ProfileDir 'C:\Users\me\.dsh\profiles\desktop'
+.\install.ps1 -NoProfileInstall
+```
+
+`-SkipSetup` skips the Python/bundle step and only registers an existing `plugin-current`; `-Force` allows the profile edit while Harness is running. A plugin cannot be loaded into a running process, so restart Harness after the installer finishes.
+
+### Manual: setup plus plugin manager
+
+`setup.ps1` remains available for users who do not want an installer to edit the Harness profile. It creates the Python environment, installs the package from the repository root, copies the bundle to `plugin-current`, and writes workspace/converter settings. It does not edit the profile.
+
+```powershell
+$setupScript = '<repo>\integrations\deepseek_harness\setup.ps1'
+powershell -NoProfile -ExecutionPolicy Bypass -File $setupScript -Workspace 'C:\work\my-project'
+```
+
+Then install the printed path with the in-app manager, enable Rosetta if needed, and restart:
 
 ```text
 plugin_manager { action: "install_bundle", target: "<printed plugin-current path>" }
 ```
 
-Restart Harness after installation. For later code updates, rerun `setup.ps1` and restart Harness; it updates the same bundle directory, so do not install a second copy. If only the workspace or converter paths changed, use `-SkipPackageInstall`: it skips pip and first verifies that the installed Python packages match `src/` byte for byte. It refuses to refresh a stale Python package, so use the normal setup command when Python source changed. This path also avoids contacting PyPI when adding a converter or switching workspaces. Running setup again is safe and idempotent: it reuses the existing Python environment, overwrites `plugin-current` in place, and does not add a second bundle. It never installs into the Harness profile and never restarts Harness for you.
+The repository root now declares the same bundle, so `plugin_manager { action: "install_bundle", target: "github:yjyxfcy/nothing" }` also resolves. That installs the JavaScript half only; run setup first so the Python environment and bridge exist.
 
-If an older installation points at this repository's `integrations/deepseek_harness` source directory rather than `plugin-current`, Harness cannot replace the same plugin ID in place. Back up the Harness profile, uninstall that old Rosetta entry in the plugin manager, install the generated `plugin-current` bundle, enable it, and restart. Keep the existing workspace's `.rosetta/` directory; uninstalling the plugin does not require deleting sessions or artifacts. To update a converter installed outside `PATH`, rerun setup with its matching `-T2lPath`, `-PandocPath`, `-Sv2vPath`, `-TypstPath`, or `-NushellPath` argument; the generated plugin configuration records the resolved executable path.
+Setup canonicalizes and deduplicates workspace roots. Re-running with a new list replaces the allow-list, so include every project you want the plugin to manage. Studio's default workspace is the first root; use **Select workspace** in Studio to switch its activity view. Setup saves detected converter paths locally because the Harness process may not inherit a shell's updated `PATH`, and prints a per-pair readiness summary that distinguishes blocked pairs from the built-in reduced-coverage fallback and optional validators. The checked-in `cordis.patch.yml` intentionally contains no machine-specific paths; the Host can derive the workspace from the current chat, while setup generates explicit roots for this machine.
+
+For every selected root, setup creates `<workspace>/.rosetta/.gitignore` when missing, to exclude local sessions, activity, and recovery data from Git. An existing ignore file is left unchanged; verify that it excludes `.rosetta` state before publishing. Setup will not write through a reparse-point `.rosetta` directory or `.gitignore` file. Ignore rules do not untrack files already committed, so check `git ls-files -- .rosetta` before publishing an existing workspace.
+
+If an older installation points at this repository's `integrations/deepseek_harness` source directory rather than `plugin-current`, Harness cannot replace the same plugin ID in place. Back up the Harness profile, uninstall that old Rosetta entry in the plugin manager, install `plugin-current`, and restart. Keep the workspace's `.rosetta/` directory; uninstalling does not require deleting sessions or artifacts. To update a converter installed outside `PATH`, rerun setup with its matching `-T2lPath`, `-PandocPath`, `-Sv2vPath`, `-TypstPath`, or `-NushellPath` argument.
 
 ### First-run checklist
 
 1. Install the external tools your pair needs and put them on `PATH`.
-2. Open PowerShell in the project directory you want to manage and run setup using the Rosetta repository's script path, or pass `-Workspace <path1>,<path2>` explicitly. The no-argument default is the shell's current directory. It prints the stable bundle path and each allowed root.
-3. In Harness, run `plugin_manager { action: "install_bundle", target: "<printed path>" }` and enable Rosetta if the manager does not enable it automatically.
-4. Restart Harness. A plugin cannot be loaded into the running process.
-5. Send the first message in a chat inside the workspace. The status strip appears below the composer only after a chat exists; an unsent blank chat does not mount it.
-6. Ask the agent to run `ros_doctor`. This is the one check that proves the Host and Python halves agree.
+2. Run the root installer from the project directory, or run setup with `-Workspace <path1>,<path2>` explicitly.
+3. Restart Harness. A newly installed Host bundle cannot be loaded into the running process.
+4. Send the first message in a chat inside the workspace. The status strip appears below the composer only after a chat exists; an unsent blank chat does not mount it.
+5. Ask the agent to run `ros_doctor`. This is the one check that proves the Host and Python halves agree.
 
-There is no supported one-click install, and this repository does not claim one: the Harness plugin manager step and the restart are performed by the user.
+The remaining manual step is the Harness restart. Everything else, including the profile registration, is handled by `install.ps1`.
 
 ### Did the running Harness actually load this build?
 
@@ -201,6 +225,7 @@ The Python suites use the interpreter created by setup. Acceptance discovers con
 - `client.js`: Harness status strip, preview/delivery controls, and the short Host bundle digest in Details.
 - `python/rosetta_harness_bridge.py`: JSON bridge to the installed Python package, including metadata-only logging and local-state retention.
 - `setup.ps1`: local environment and bundle setup (`-PipArgs` for an offline/warmed install).
+- `update_profile.mjs`: minimal 2-space JSON edit for the Harness profile; used by the root `install.ps1`.
 - `workspace_setup.ps1`: workspace validation/deduplication and guarded `.rosetta/.gitignore` initialization used by setup.
 - `check_activation.ps1`: compares source, installed bundle and the running generation; only reports `ACTIVE` when all three agree.
 - `tests/`: regression and acceptance tests, including `setup_workspace_test.ps1` for multi-root setup behavior.

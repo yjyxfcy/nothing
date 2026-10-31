@@ -1,0 +1,48 @@
+{
+  "name": "@local/dsh-rosetta-compat",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Rosetta compatibility layer for DeepSeek Harness: project target artifacts into a familiar view, edit there, preview, and deliver back atomically.",
+  "exports": {
+    ".": "./integrations/deepseek_harness/index.js",
+    "./client": "./integrations/deepseek_harness/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "install.ps1",
+    "integrations/deepseek_harness/package.json",
+    "integrations/deepseek_harness/index.js",
+    "integrations/deepseek_harness/client.js",
+    "integrations/deepseek_harness/cordis.patch.yml",
+    "integrations/deepseek_harness/python/rosetta_harness_bridge.py",
+    "integrations/deepseek_harness/update_profile.mjs",
+    "integrations/deepseek_harness/setup.ps1",
+    "integrations/deepseek_harness/workspace_setup.ps1",
+    "integrations/deepseek_harness/check_activation.ps1",
+    "integrations/deepseek_harness/README.md",
+    "integrations/deepseek_harness/tests/check_installed_sync.py",
+    "src/**",
+    "pyproject.toml",
+    "README.md",
+    "QUICKSTART.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "meta": {
+    "title": "Rosetta compatibility layer",
+    "description": "Project Typst/SystemVerilog/PRQL/Nushell artifacts into LaTeX/Verilog/SQL/Bash views, edit there, preview the delivery, and write back atomically."
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./integrations/deepseek_harness/cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  }
+}

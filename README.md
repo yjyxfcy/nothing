@@ -14,23 +14,42 @@ Rosetta Studio can display the editing steps and views.
 
 ## Install for DeepSeek Harness (Windows)
 
-1. Install Python 3.10+, DeepSeek Harness, [uv](https://docs.astral.sh/uv/getting-started/installation/), and the external tools for your file type. [Downloads and configuration](QUICKSTART.md#install-converters) explain which are required.
-2. Clone this repository and open PowerShell in the project you want the agent to edit. Replace the path below with your clone:
+Rosetta needs Windows, Python 3.10+, DeepSeek Harness, and Node.js with `pnpm` on
+`PATH`. [uv](https://docs.astral.sh/uv/getting-started/installation/) is
+recommended for the Python install. External converters are needed only for the
+file types you plan to edit; see [Downloads and
+configuration](QUICKSTART.md#install-converters).
 
-   ```powershell
-   $RosettaRepo = 'C:\path\to\Rosetta-for-AI-Agents'
-   $Setup = Join-Path $RosettaRepo 'integrations\deepseek_harness\setup.ps1'
-   & $Setup
-   ```
+Close DeepSeek Harness, open PowerShell in the project directory you want
+Rosetta to manage, and run one command:
 
-3. In DeepSeek Harness, use the plugin manager to install the `plugin-current` path printed by setup, enable the plugin if needed, and restart Harness. See [the complete walkthrough](QUICKSTART.md#install-the-plugin-in-harness) for the manager command and verification.
-4. Open a chat in the configured project and ask the agent to run `ros_doctor`. Check that your format's tools are available.
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/yjyxfcy/nothing/main/install.ps1 | iex"
+```
 
-Setup uses `uv` when it is available and pip otherwise. It creates a dedicated
-Python environment; it does not install external converters or modify the
-Harness profile. The first installation needs network access. To install for a
-project other than the current PowerShell directory, use `& $Setup -Workspace
-'C:\path\to\your-project'`.
+The installer downloads the repository into a temporary directory, creates a
+dedicated Python environment under `%LOCALAPPDATA%\Rosetta\Harness`, writes the
+stable `plugin-current` bundle, registers it in the active DeepSeek Harness
+desktop profile, and updates the profile lockfile. It backs up the profile's
+`package.json` and `pnpm-lock.yaml` under
+`.plugin-manager\rosetta-install-backup-*` before changing them. It never
+restarts Harness for you: after it finishes, restart Harness, open a chat in the
+configured project, and ask the agent to run `ros_doctor`.
+
+To inspect the code before running it, clone the repository and run the same
+installer directly:
+
+```powershell
+git clone https://github.com/yjyxfcy/nothing
+powershell -NoProfile -ExecutionPolicy Bypass -File .\nothing\install.ps1 -Workspace 'C:\work\my-project'
+```
+
+`install.ps1` accepts `-Workspace` (one or more project roots), the converter
+path options documented in [the setup guide](QUICKSTART.md#set-up-on-windows),
+`-SkipPackageInstall`, and `-NoProfileInstall` if you prefer to register the
+printed bundle with the in-app plugin manager yourself. Re-run it after updating
+the repository; it reuses the Python environment and refreshes `plugin-current`
+in place.
 
 ## Make your first edit
 
